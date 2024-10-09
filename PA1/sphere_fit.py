@@ -35,8 +35,8 @@ def fit_sphere(points):
 
     # Perform the least squares optimization
     result = least_squares(residuals, initial_guess, args=(x, y, z))
-
     # Extract the optimized parameters
+
     xc, yc, zc, r = result.x
     residual_sum = 2 * result.cost  # total sum of squared residuals
 
