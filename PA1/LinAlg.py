@@ -91,7 +91,6 @@ class Vector:
 
 
 
-
 class Frame:
     def __init__(self, r: np.ndarray, t: np.ndarray) -> None:
         """
@@ -176,7 +175,7 @@ def point_cloud_registration_least_squares(target_points, source_points):
     
     Args:
     target_points (np.ndarray): Nx3 array of points from calreadings (e.g., A_vectors, D_vectors, C_vectors).
-    source_points (np.ndarray): Nx3 array of points from calbody.
+    source_points (np.ndarray): Nx3 array of points from calbody. (e.g., a_vectors, d_vectors, c_vectors).
     
     Returns:
     R (np.ndarray): 3x3 optimal rotation matrix.
@@ -215,8 +214,8 @@ def perform_calibration_registration_for_frames(calreadings_frames, calbody_vect
     source_points = np.array([vec.coords for vec in calbody_vectors])
 
     # Select the appropriate vectors from calreadings_frames based on vector_type
-    vector_key = f'{vector_type.lower()}_vectors'  # e.g., 'a_vectors', 'd_vectors', 'c_vectors'
-
+    vector_key = f'{vector_type}_vectors'  # e.g., 'A_vectors', 'D_vectors', 'C_vectors'
+    
     # Perform registration for each frame
     for frame_num, frame_data in calreadings_frames.items():
         # Check if the vector type exists in the frame data
@@ -473,6 +472,51 @@ def perform_pivot_registration_for_frames(G_points_frames, small_g_j):
 
 
 
+
+
+
+def visualize_vectors(d_vectors, a_vectors, c_vectors):
+    """
+    Visualize the vectors using matplotlib.
+
+    Parameters:
+    d_vectors (list of Vector): List of d_i vectors.
+    a_vectors (list of Vector): List of a_i vectors.
+    c_vectors (list of Vector): List of c_i vectors.
+    """
+    # Extract coordinates from Vector objects
+    d_coords = np.array([vec.coords for vec in d_vectors])
+    a_coords = np.array([vec.coords for vec in a_vectors])
+    c_coords = np.array([vec.coords for vec in c_vectors])
+
+    # Plot d_vectors
+    fig = plt.figure(figsize=(15, 5))
+    ax1 = fig.add_subplot(131, projection='3d')
+    ax1.scatter(d_coords[:, 0], d_coords[:, 1], d_coords[:, 2], c='r', marker='o')
+    ax1.set_title('d_i Vectors (Optical Markers on base of EM Tracker)')
+    ax1.set_xlabel('X')
+    ax1.set_ylabel('Y')
+    ax1.set_zlabel('Z')
+
+    # Plot a_vectors
+    ax2 = fig.add_subplot(132, projection='3d')
+    ax2.scatter(a_coords[:, 0], a_coords[:, 1], a_coords[:, 2], c='g', marker='^')
+    ax2.set_title('a_i Vectors (Optical Markers on Calibration Object)')
+    ax2.set_xlabel('X')
+    ax2.set_ylabel('Y')
+    ax2.set_zlabel('Z')
+
+    # Plot c_vectors
+    ax3 = fig.add_subplot(133, projection='3d')
+    ax3.scatter(c_coords[:, 0], c_coords[:, 1], c_coords[:, 2], c='b', marker='s')
+    ax3.set_title('c_i Vectors (EM Markers on Calibration Object)')
+    ax3.set_xlabel('X')
+    ax3.set_ylabel('Y')
+    ax3.set_zlabel('Z')
+
+    # Show plots
+    plt.tight_layout()
+    plt.show()
 
 
 
