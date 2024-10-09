@@ -197,14 +197,14 @@ def point_cloud_registration_least_squares(target_points, source_points):
 
     return R_optimal, t_optimal
 
-def perform_registration_for_frames(calreadings_frames, calbody_vectors, vector_type):
+def perform_calibration_registration_for_frames(calreadings_frames, calbody_vectors, vector_type):
     """
     Perform point cloud registration for each frame in calreadings, selecting the type of vectors (A, D, or C).
     
     Args:
     calreadings_frames (dict): Dictionary where each key is a frame number and value is a dict of A_vectors, D_vectors, or C_vectors.
     calbody_vectors (list): List of vectors from calbody (corresponding to the selected vector type).
-    vector_type (str): The type of vector to use ('A', 'D', or 'C').
+    vector_type (str): The type of vector to use ('A', 'D', or 'C',).
     
     Returns:
     dict: Dictionary with frame numbers as keys and (R, t) as values where R is the rotation matrix and t is the translation vector.
@@ -444,7 +444,7 @@ def process_frame_midpoints(frames):
 
     return translated_frames
 
-def perform_registration_for_frames(G_points_frames, small_g_j):
+def perform_pivot_registration_for_frames(G_points_frames, small_g_j):
     """
     Perform point cloud registration for each frame
     
