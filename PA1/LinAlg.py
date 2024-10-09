@@ -183,6 +183,8 @@ def point_cloud_registration_least_squares(target_points, source_points):
     """
     # Initial guess for parameters: rotation as [0, 0, 0] (no rotation), translation as [0, 0, 0]
     initial_params = np.zeros(6)
+    initial_t = compute_midpoint(target_points) - compute_midpoint(source_points)
+    initial_params[3:] = initial_t
 
     # Use least squares to minimize the residuals
     result = least_squares(residuals, initial_params, args=(source_points, target_points))
