@@ -102,3 +102,52 @@ def read_calreadings_file(file_path: str):
             frames_data[frame_num] = frame_dict
 
     return frames_data
+
+
+def read_empivot_file(file_path: str):
+    """
+    Reads an EMPIVOT.TXT file and extracts the G_i points for each frame.
+
+    Args:
+    file_path (str): Path to the EMPIVOT.TXT file.
+
+    Returns:
+    tuple: A list of frames, where each frame contains a list of G_i vectors (Nx3 array),
+           the number of EM markers (N_G), and the number of frames (N_frames).
+    """
+    frames = {}  # List to store G_i points for each frame
+
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+        # First line contains N_G, N_frames, and file name
+        header = lines[0].split(',')
+        N_G = int(header[0].strip())  # Number of EM markers on the probe
+        N_frames = int(header[1].strip())  # Number of frames
+        file_name = header[2].strip()  # File name (not used in processing)
+
+        # Start reading G_i points for each frame
+        current_line = 1
+        for frame_idx in range(N_frames):
+            frame_points = []
+            # Read G_i points for this frame
+            for i in range(N_G):
+                G_coords = list(map(float, lines[current_line].split(',')))
+                frame_points.append(LA.Vector(*G_coords))
+                current_line += 1
+            frames[frame_idx + 1] = frame_points
+
+    return frames, N_G, N_frames
+
+
+
+
+
+
+
+
+
+
+
+
+
