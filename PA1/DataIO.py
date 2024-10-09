@@ -115,7 +115,7 @@ def read_empivot_file(file_path: str):
     tuple: A list of frames, where each frame contains a list of G_i vectors (Nx3 array),
            the number of EM markers (N_G), and the number of frames (N_frames).
     """
-    frames = {}  # List to store G_i points for each frame
+    frames = {}  # Dictionary to store D_i and H_i points for each frame
 
     with open(file_path, 'r') as file:
         lines = file.readlines()
@@ -140,14 +140,46 @@ def read_empivot_file(file_path: str):
     return frames, N_G, N_frames
 
 
+def read_optpivot_file(file_path: str):
+    """
+    Reads an OPTPIVOT.TXT file and extracts the D_i and H_i points for each frame.
 
+    Args:
+    file_path (str): Path to the OPTPIVOT.TXT file.
 
+    Returns:
+    tuple: A list of frames, where each frame contains a list of D_i and H_i vectors (Nx3 array), (Nx3 array)
+    the number of OPT markers on EM base (N_D), the number of OPT markers on probe (N_H), and the number of frames (N_frames).
+    """
+    frames = {}  # Dictionary to store D_i and H_i points for each frame
 
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
 
+        # First line contains N_D, N_H, N_frames, and file name
+        header = lines[0].split(',')
+        N_D = int(header[0].strip())  # Number of optical markers on EM base
+        N_H = int(header[1].strip())  # Number of optical markers on probe
+        N_frames = int(header[2].strip())  # Number of frames
+        file_name = header[3].strip()  # File name (not used in processing)
 
+        current_line = 1
+        for frame_idx in range(N_frames):
+            D_points = []
+            H_points = []
 
+            # Read D_i points for this frame
+            for i in range(N_D):
+                D_coords = list(map(float, lines[current_line].split(',')))
+                D_points.append(LA.Vector(*D_coords))
+                current_line += 1
 
+            # Read H_i points for this frame
+            for i in range(N_H):
+                H_coords = list(map(float, lines[current_line].split(',')))
+                H_points.append(LA.Vector(*H_coords))
+                current_line += 1
 
+            frames[frame_idx + 1] = {'D_vectors': D_points, 'H_vectors': H_points}
 
-
-
+    return frames, N_D, N_H, N_frames
