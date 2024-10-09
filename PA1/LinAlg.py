@@ -355,11 +355,34 @@ def compute_C_expected_for_all_frames(F_D_dict, F_A_dict, c_vectors):
     
 def compute_midpoint(observations):
     """
-    Compute the midpoint G0 from the observed points G.
+    Compute the midpoint from the observed points.
     observations: List of 3D points (Nx3 array).
-    Returns the midpoint G0.
+    Returns the midpoint.
     """
     return np.mean(observations, axis=0)
+
+def compute_centroid_vectors(frames_data, vector_type):
+    """
+    Create a list of centroid vectors by computing the midpoint of vectors for each frame.
+
+    Parameters:
+    frames_data (dict): Dictionary containing frame data with N_* for each frame.
+    vector_type (str): The type of vector to use ('H' or 'G').
+
+    Returns:
+    list of Vector: List of vectors for each frame.
+    """
+
+    vector_key = f'{vector_type}_vectors'
+    centroid_vectors = []
+    for frame_num, frame_data in frames_data.items():
+        coords = np.array([vec.coords for vec in frame_data[vector_key]])
+        centroid_coords = compute_midpoint(coords)
+        centroid = Vector(*centroid_coords)
+        centroid_vectors.append(centroid)
+
+    return centroid_vectors
+
 
 def translate_points(observations, midpoint):
     """
