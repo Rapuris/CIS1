@@ -402,7 +402,7 @@ def compute_local_marker_vectors(frames_data, centroid_vectors, vector_type):
         centroid_coords = centroid_vectors[frame_num - 1].coords
         coords = [vec.coords for vec in frame_data[vector_key]]
         hi_list = [Vector(*(coords[j] - centroid_coords)) for j in range(len(coords))]
-        hi_vectors[f'frame {frame_num}'] = hi_list
+        hi_vectors[frame_num] = hi_list
 
     return hi_vectors
 
@@ -494,7 +494,7 @@ def process_frame_midpoints(frames):
 
     return translated_frames
 
-def perform_pivot_registration_for_frames(G_points_frames, small_g_j):
+def perform_pivot_registration_for_frames(G_points_frames, small_g_j, vector_type):
     """
     Perform point cloud registration for each frame
     
@@ -503,11 +503,12 @@ def perform_pivot_registration_for_frames(G_points_frames, small_g_j):
     dict: Dictionary with frame numbers as keys and (R, t) as values where R is the rotation matrix and t is the translation vector.
     """
     registration_results = {}
+    vector_key = f'{vector_type}_vectors'
 # Perform registration for each frame
     for frame_num, frame_data in G_points_frames.items():
        
         source_points = np.array([vec.coords for vec in small_g_j[frame_num]])
-        target_points = np.array([vec.coords for vec in frame_data])
+        target_points = np.array([vec.coords for vec in frame_data[vector_key]])
 
         # Perform point cloud registration using least squares to find R and t
         R_optimal, t_optimal = point_cloud_registration_least_squares(target_points, source_points)
