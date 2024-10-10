@@ -91,7 +91,6 @@ class Vector:
 
 
 
-
 class Frame:
     def __init__(self, r: np.ndarray, t: np.ndarray) -> None:
         """
@@ -176,7 +175,7 @@ def point_cloud_registration_least_squares(target_points, source_points):
     
     Args:
     target_points (np.ndarray): Nx3 array of points from calreadings (e.g., A_vectors, D_vectors, C_vectors).
-    source_points (np.ndarray): Nx3 array of points from calbody.
+    source_points (np.ndarray): Nx3 array of points from calbody. (e.g., a_vectors, d_vectors, c_vectors).
     
     Returns:
     R (np.ndarray): 3x3 optimal rotation matrix.
@@ -184,6 +183,8 @@ def point_cloud_registration_least_squares(target_points, source_points):
     """
     # Initial guess for parameters: rotation as [0, 0, 0] (no rotation), translation as [0, 0, 0]
     initial_params = np.zeros(6)
+    initial_t = compute_midpoint(target_points) - compute_midpoint(source_points)
+    initial_params[3:] = initial_t
 
     # Use least squares to minimize the residuals
     result = least_squares(residuals, initial_params, args=(source_points, target_points))
@@ -197,14 +198,14 @@ def point_cloud_registration_least_squares(target_points, source_points):
 
     return R_optimal, t_optimal
 
-def perform_registration_for_frames(calreadings_frames, calbody_vectors, vector_type):
+def perform_calibration_registration_for_frames(calreadings_frames, calbody_vectors, vector_type):
     """
     Perform point cloud registration for each frame in calreadings, selecting the type of vectors (A, D, or C).
     
     Args:
     calreadings_frames (dict): Dictionary where each key is a frame number and value is a dict of A_vectors, D_vectors, or C_vectors.
     calbody_vectors (list): List of vectors from calbody (corresponding to the selected vector type).
-    vector_type (str): The type of vector to use ('A', 'D', or 'C').
+    vector_type (str): The type of vector to use ('A', 'D', or 'C',).
     
     Returns:
     dict: Dictionary with frame numbers as keys and (R, t) as values where R is the rotation matrix and t is the translation vector.
@@ -215,8 +216,8 @@ def perform_registration_for_frames(calreadings_frames, calbody_vectors, vector_
     source_points = np.array([vec.coords for vec in calbody_vectors])
 
     # Select the appropriate vectors from calreadings_frames based on vector_type
-    vector_key = f'{vector_type.lower()}_vectors'  # e.g., 'a_vectors', 'd_vectors', 'c_vectors'
-
+    vector_key = f'{vector_type}_vectors'  # e.g., 'A_vectors', 'D_vectors', 'C_vectors'
+    
     # Perform registration for each frame
     for frame_num, frame_data in calreadings_frames.items():
         # Check if the vector type exists in the frame data
@@ -299,4 +300,277 @@ def plot_3d_transformed_vs_target(frame_num, transformed_vectors, target_vectors
     plt.legend()
     plt.title(f'3D Plot of Transformed points vs Target points (Frame {frame_num})')
     plt.show()
+
+def compute_C_expected_for_all_frames(F_D_dict, F_A_dict, c_vectors):
+    """
+    Compute C(expected) for each frame using the Frame class and the formula C(expected) = F_D^−1 • F_A • c_i.
+    
+    Args:
+    F_D_list (list of Frame): List of Frame objects F_D for each frame.
+    F_A_list (list of Frame): List of Frame objects F_A for each frame.
+    c_vectors (np.ndarray): Nx3 or Nx4 array of c_i vectors (Nx3 for 3D or Nx4 for homogeneous 3D).
+
+    Returns:
+    dict: A dictionary where keys are frame numbers and values are Nx3 or Nx4 arrays of C_expected vectors.
+    """
+    assert F_D_dict.keys() == F_A_dict.keys(), "F_D_dict and F_A_dict must have the same frame numbers"
+
+    C_expected_results = {}
+
+    # Loop over each common frame number in both dictionaries
+    for frame_num in F_D_dict.keys():
+        F_D = F_D_dict[frame_num]
+        F_A = F_A_dict[frame_num]
+
+        # Debugging: Check what F_D and F_A actually are
+        #print(f"Frame {frame_num}:")
+        #print(f"F_D: {F_D}")
+        #print(f"F_A: {F_A}")
+
+        # Check if F_D and F_A are Frame objects
+        if not isinstance(F_D, Frame) or not isinstance(F_A, Frame):
+            raise TypeError(f"Expected F_D and F_A to be Frame objects, but got {type(F_D)} and {type(F_A)}")
+
+        # Step 1: Compute the inverse of F_D for this frame
+        F_D_inv = F_D.inv()
+
+        # Step 2: Initialize an empty list to store the C_expected results for this frame
+        C_expected_list = []
+
+        # Step 3: Loop over each vector c_i in c_vectors
+        for c_i in c_vectors:
+            # Step 4: Compute F_A • c_i (this applies F_A's transformation to c_i)
+            F_A_c_i = F_A @ c_i
+
+            # Step 5: Compute F_D^−1 • (F_A • c_i) (this applies the inverse transformation of F_D)
+            C_expected = F_D_inv @ F_A_c_i
+
+            # Append the result to the list for this frame
+            C_expected_list.append(C_expected)
+
+        # Store the results for this frame in the dictionary
+        C_expected_results[frame_num] = np.array(C_expected_list)
+
+    return C_expected_results
+    
+def compute_midpoint(observations):
+    """
+    Compute the midpoint from the observed points.
+    observations: List of 3D points (Nx3 array).
+    Returns the midpoint.
+    """
+    return np.mean(observations, axis=0)
+
+def compute_centroid_vectors(frames_data, vector_type):
+    """
+    Create a list of centroid vectors by computing the midpoint of vectors for each frame.
+
+    Parameters:
+    frames_data (dict): Dictionary containing frame data with N_* for each frame.
+    vector_type (str): The type of vector to use ('H' or 'G').
+
+    Returns:
+    list of Vector: List of vectors for each frame.
+    """
+
+    vector_key = f'{vector_type}_vectors'
+    centroid_vectors = []
+    for frame_num, frame_data in frames_data.items():
+        coords = np.array([vec.coords for vec in frame_data[vector_key]])
+        centroid_coords = compute_midpoint(coords)
+        centroid = Vector(*centroid_coords)
+        centroid_vectors.append(centroid)
+
+    return centroid_vectors
+
+def compute_local_marker_vectors(frames_data, centroid_vectors, vector_type):
+    """
+    Compute the hi vectors for each frame, where hi = Hi - H0.
+
+    Parameters:
+    frames_data (dict): Dictionary containing frame data with vectors for each frame.
+    centroid_vectors (list of Vector): List of centroid vectors for each frame.
+    vector_type (str): The type of vector to use ('H' or 'G').
+
+    Returns:
+    dict: Dictionary with keys as 'frame n' and values as a list of hi Vectors for each frame.
+    """
+    vector_key = f'{vector_type}_vectors'
+    hi_vectors = {}
+
+    for frame_num, frame_data in frames_data.items():
+        centroid_coords = centroid_vectors[frame_num - 1].coords
+        coords = [vec.coords for vec in frame_data[vector_key]]
+        hi_list = [Vector(*(coords[j] - centroid_coords)) for j in range(len(coords))]
+        hi_vectors[frame_num] = hi_list
+
+    return hi_vectors
+
+
+
+
+
+def translate_points(observations, midpoint):
+    """
+    Translate the observations relative to the midpoint G0.
+    observations: List of 3D points (Nx3 array).
+    midpoint: The calculated midpoint G0 (1x3 array).
+    Returns the translated points g_j = G_j - G0.
+    """
+    return observations - midpoint
+
+def fit_sphere(points):
+    """
+    Fits a sphere to a set of 3D points using nonlinear least squares optimization.
+
+    Parameters:
+    points (array-like): An Nx3 array or list of (x, y, z) coordinates.
+
+    Returns:
+    center (numpy.ndarray): The (x, y, z) coordinates of the sphere's center.
+    radius (float): The radius of the sphere.
+    residuals (float): The sum of squared residuals of the fit.
+    """
+
+    # Convert input to a NumPy array
+    points = np.asarray(points)
+    x = points[:, 0]
+    y = points[:, 1]
+    z = points[:, 2]
+
+    # Initial guess for the sphere's center (mean of the points)
+    x0 = np.mean(x)
+    y0 = np.mean(y)
+    z0 = np.mean(z)
+    r0 = np.mean(np.sqrt((x - x0)**2 + (y - y0)**2 + (z - z0)**2))
+
+    initial_guess = np.array([x0, y0, z0, r0])
+
+    # Define the residuals function
+    def residuals(params, x, y, z):
+        xc, yc, zc, r = params
+        return np.sqrt((x - xc)**2 + (y - yc)**2 + (z - zc)**2) - r
+
+    # Perform the least squares optimization
+    result = least_squares(residuals, initial_guess, args=(x, y, z))
+
+    # Extract the optimized parameters
+    xc, yc, zc, r = result.x
+    residual_sum = 2 * result.cost  # total sum of squared residuals
+
+    center = np.array([xc, yc, zc])
+    radius = r
+
+    return center, radius, residual_sum
+
+def process_frame_midpoints(frames):
+    """
+    For each frame, computes the midpoint of the observed points and translates
+    the observations relative to this midpoint.
+
+    Args:
+    frames (list): A list of frames where each frame is a list of Vector objects representing 3D points.
+
+    Returns:
+    list: A list of frames where each frame contains the translated points g_j relative to the midpoint G_0.
+    """
+    translated_frames = {}
+
+    for (frame_num, frame) in frames.items():
+        # Convert the frame (list of Vector objects) to a NumPy array for midpoint computation
+        #print(frame)
+        observations = np.array([v.coords for v in frame])
+
+        # Step 1: Compute the midpoint G_0 for the frame
+        G0 = compute_midpoint(observations)
+
+        # Step 2: Translate the points relative to the midpoint
+        translated_observations = translate_points(observations, G0)
+
+        # Convert the translated points back to Vector objects
+        translated_vectors = [Vector(g[0], g[1], g[2]) for g in translated_observations]
+        
+        translated_frames[frame_num] = translated_vectors
+
+    return translated_frames
+
+def perform_pivot_registration_for_frames(G_points_frames, small_g_j, vector_type):
+    """
+    Perform point cloud registration for each frame
+    
+    
+    Returns:
+    dict: Dictionary with frame numbers as keys and (R, t) as values where R is the rotation matrix and t is the translation vector.
+    """
+    registration_results = {}
+    vector_key = f'{vector_type}_vectors'
+# Perform registration for each frame
+    for frame_num, frame_data in G_points_frames.items():
+       
+        source_points = np.array([vec.coords for vec in small_g_j[frame_num]])
+        target_points = np.array([vec.coords for vec in frame_data[vector_key]])
+
+        # Perform point cloud registration using least squares to find R and t
+        R_optimal, t_optimal = point_cloud_registration_least_squares(target_points, source_points)
+
+        # Store the result for this frame
+        registration_results[frame_num] = Frame(R_optimal, t_optimal)
+
+    return registration_results
+
+
+
+
+
+
+
+
+
+
+def visualize_vectors(d_vectors, a_vectors, c_vectors):
+    """
+    Visualize the vectors using matplotlib.
+
+    Parameters:
+    d_vectors (list of Vector): List of d_i vectors.
+    a_vectors (list of Vector): List of a_i vectors.
+    c_vectors (list of Vector): List of c_i vectors.
+    """
+    # Extract coordinates from Vector objects
+    d_coords = np.array([vec.coords for vec in d_vectors])
+    a_coords = np.array([vec.coords for vec in a_vectors])
+    c_coords = np.array([vec.coords for vec in c_vectors])
+
+    # Plot d_vectors
+    fig = plt.figure(figsize=(15, 5))
+    ax1 = fig.add_subplot(131, projection='3d')
+    ax1.scatter(d_coords[:, 0], d_coords[:, 1], d_coords[:, 2], c='r', marker='o')
+    ax1.set_title('d_i Vectors (Optical Markers on base of EM Tracker)')
+    ax1.set_xlabel('X')
+    ax1.set_ylabel('Y')
+    ax1.set_zlabel('Z')
+
+    # Plot a_vectors
+    ax2 = fig.add_subplot(132, projection='3d')
+    ax2.scatter(a_coords[:, 0], a_coords[:, 1], a_coords[:, 2], c='g', marker='^')
+    ax2.set_title('a_i Vectors (Optical Markers on Calibration Object)')
+    ax2.set_xlabel('X')
+    ax2.set_ylabel('Y')
+    ax2.set_zlabel('Z')
+
+    # Plot c_vectors
+    ax3 = fig.add_subplot(133, projection='3d')
+    ax3.scatter(c_coords[:, 0], c_coords[:, 1], c_coords[:, 2], c='b', marker='s')
+    ax3.set_title('c_i Vectors (EM Markers on Calibration Object)')
+    ax3.set_xlabel('X')
+    ax3.set_ylabel('Y')
+    ax3.set_zlabel('Z')
+
+    # Show plots
+    plt.tight_layout()
+    plt.show()
+
+
+
+
 
