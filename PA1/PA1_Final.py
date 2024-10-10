@@ -6,10 +6,13 @@ import PivotCalibration as PC
 import glob
 import regex as re
 
-"""
-This file serves as the complementary file to Run Dataset a.ipynb and allows the user to run and obtain the answers to all specified
-questions in Assignment 1
-"""
+'''
+Created on Oct 5, 2024
+
+@author: Sampath Rapuri and William Li
+
+@summary: This module is to answer and generate the appropriate output files for programming assignment 1.
+'''
 
 def problem_4(calbody_filepath, calreadings_filepath):
     d_vectors, a_vectors, c_vectors, N_D, N_A, N_C = io.read_calbody_file(calbody_filepath)
@@ -74,9 +77,9 @@ def write_data(outfile, C_expected_vectors, EM_probe_pos, OPT_probe_pos):
     """
     NC = len(C_expected_vectors[1])  
     Nframes = len(C_expected_vectors)  
-
+    outfile_name = outfile.split('/')[-1]
     with open(outfile, 'w') as file:
-        file.write(f"{NC}, {Nframes}, {outfile}\n")
+        file.write(f"{NC}, {Nframes}, {outfile_name}\n")
         file.write(f"{EM_probe_pos[0]:.2f}, {EM_probe_pos[1]:.2f}, {EM_probe_pos[2]:.2f}\n")
         file.write(f"{OPT_probe_pos[0]:.2f}, {OPT_probe_pos[1]:.2f}, {OPT_probe_pos[2]:.2f}\n")
         for frame_num, vectors in C_expected_vectors.items():
@@ -92,14 +95,14 @@ if __name__ == '__main__':
     optpivot_list = sorted(glob.glob("./PA_1_Data/*pa1*optpivot.txt"))
     
     for calbody, calreadings, empivot, optpivot in zip(calbody_list, calreading_list, empivot_list, optpivot_list):
-        name_pattern = r'pa1-(debug|unknown)-(.)-calbody.txt'
-        res_calbody = re.search(name_pattern, calbody)
-        _, letter = res_calbody.groups()
+        name_pattern = r'pa1-(debug|unknown)-([a-z])-calbody.txt'
+        match = re.search(name_pattern, calbody)
+        prefix, letter = match.groups()
         print("Data set:", letter)
 
         # Problem 4: Compute C_expected
         C_expected = problem_4(calbody, calreadings)
-        outfile = f"./PA_1_Data/pa1-{letter}-output1.txt"
+        outfile = f"./PA1_Outputs/pa1-{prefix}-{letter}-output1.txt"
 
         # Problem 5: Compute EM probe position
         EM_probe_pos = problem_5(empivot)
