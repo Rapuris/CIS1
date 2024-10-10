@@ -383,6 +383,38 @@ def compute_centroid_vectors(frames_data, vector_type):
 
     return centroid_vectors
 
+def combine_point_cloud_frames(F_D_opt_point_cloud, F_H_opt_point_cloud):
+    """
+    Combine two point cloud frame dictionaries by multiplying their transformations in order.
+
+    Parameters:
+    F_D_opt_point_cloud (dict): Dictionary containing the first set of frames.
+    F_H_opt_point_cloud (dict): Dictionary containing the second set of frames.
+
+    Returns:
+    dict: Combined dictionary with frame numbers as keys and Frame objects as values.
+    """
+    combined_frames = {}
+
+    # Iterate over frame numbers present in both dictionaries
+    for frame_num in F_D_opt_point_cloud:
+        if frame_num in F_H_opt_point_cloud:
+            # Get the Frame objects from both dictionaries
+            frame_D = F_D_opt_point_cloud[frame_num]
+            frame_H = F_H_opt_point_cloud[frame_num]
+            
+            # Multiply the frames to combine transformations
+            combined_frame = frame_D @ frame_H
+            
+            # Store the result in the combined dictionary
+            combined_frames[frame_num] = combined_frame
+
+    return combined_frames
+
+
+
+
+
 def compute_local_marker_vectors(frames_data, centroid_vectors, vector_type):
     """
     Compute the hi vectors for each frame, where hi = Hi - H0.
@@ -410,6 +442,10 @@ def compute_local_marker_vectors(frames_data, centroid_vectors, vector_type):
 
 
 
+
+
+
+
 def translate_points(observations, midpoint):
     """
     Translate the observations relative to the midpoint G0.
@@ -418,50 +454,6 @@ def translate_points(observations, midpoint):
     Returns the translated points g_j = G_j - G0.
     """
     return observations - midpoint
-
-def fit_sphere(points):
-    """
-    Fits a sphere to a set of 3D points using nonlinear least squares optimization.
-
-    Parameters:
-    points (array-like): An Nx3 array or list of (x, y, z) coordinates.
-
-    Returns:
-    center (numpy.ndarray): The (x, y, z) coordinates of the sphere's center.
-    radius (float): The radius of the sphere.
-    residuals (float): The sum of squared residuals of the fit.
-    """
-
-    # Convert input to a NumPy array
-    points = np.asarray(points)
-    x = points[:, 0]
-    y = points[:, 1]
-    z = points[:, 2]
-
-    # Initial guess for the sphere's center (mean of the points)
-    x0 = np.mean(x)
-    y0 = np.mean(y)
-    z0 = np.mean(z)
-    r0 = np.mean(np.sqrt((x - x0)**2 + (y - y0)**2 + (z - z0)**2))
-
-    initial_guess = np.array([x0, y0, z0, r0])
-
-    # Define the residuals function
-    def residuals(params, x, y, z):
-        xc, yc, zc, r = params
-        return np.sqrt((x - xc)**2 + (y - yc)**2 + (z - zc)**2) - r
-
-    # Perform the least squares optimization
-    result = least_squares(residuals, initial_guess, args=(x, y, z))
-
-    # Extract the optimized parameters
-    xc, yc, zc, r = result.x
-    residual_sum = 2 * result.cost  # total sum of squared residuals
-
-    center = np.array([xc, yc, zc])
-    radius = r
-
-    return center, radius, residual_sum
 
 def process_frame_midpoints(frames):
     """
@@ -518,7 +510,47 @@ def perform_pivot_registration_for_frames(G_points_frames, small_g_j, vector_typ
 
     return registration_results
 
+def solve_for_pointer_and_dimple(point_cloud):
+    """
+    Solves the overdetermined system to find p_t and p_pivot using the equation:
+    R_j * p_t + p_j = p_pivot
 
+    Parameters:
+    point_cloud (dict): Dictionary containing frame data with rotation and translation.
+                                Each value in the dictionary should have 'rotation' and 'translation' attributes.
+
+    Returns:
+    tuple: (p_t, p_pivot) where both are 3x1 numpy arrays.
+    """
+    A = []
+    b = []
+
+    # Construct A and b based on each frame's rotation and translation
+    for frame_num, frame in point_cloud.items():
+        # Extract rotation matrix and translation vector
+        R_j = frame.rotation
+        p_j = frame.translation.reshape(3, 1)  # Ensure p_j is a 3x1 vector
+
+        # Append the values to construct the matrix A and vector b
+        # A_j = [R_j | -I], where I is the identity matrix
+        A_j = np.hstack((R_j, -np.eye(3)))
+
+        A.append(A_j)
+        b.append(p_j)  # Append p_j instead of -p_j to match the correct stacking
+
+    # Stack A and b vertically to create the final system of equations
+    A = np.vstack(A)
+    b = np.vstack(b)
+
+    # Solve the least squares problem to find p_t and p_pivot
+    # A * x = b, where x = [p_t, p_pivot]
+    x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
+
+    # Extract p_t and p_pivot from the solution vector
+    p_t = x[:3].reshape(3, 1)
+    p_pivot = x[3:].reshape(3, 1)
+
+    return p_t, p_pivot
 
 
 
