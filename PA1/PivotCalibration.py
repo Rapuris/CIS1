@@ -1,48 +1,38 @@
 import numpy as np
 
-def solve_for_pointer_and_dimple(point_cloud):
+def pivot_calibration(F_G):
     """
-    Solves the overdetermined system to find p_t and p_pivot using the equation:
-    R_j * p_t + p_j = p_pivot
+    Pivot calibration to find the tip position (t_G) and the pivot point (p_pivot) when tip is in the dimple.
 
     Parameters:
-    point_cloud (dict): Dictionary containing frame data with rotation and translation.
-                                Each value in the dictionary should have 'rotation' and 'translation' attributes.
+    F_G : N_frames transformations from EM tracker to pointer frame.
+    G_0 : N_frames vectors for origin of the pointer frame wrt the EM tracker frame.
 
     Returns:
-    tuple: (p_t, p_pivot) where both are 3x1 numpy arrays.
+    t_G : 3x1 vector of the tip of pointer wrt pointer frame.
+    p_pivot: 3x1 vector of the tip of pointer wrt EM tracker frame.
     """
-    A = []
-    b = []
+    N_frames = F_G.shape[0]
 
-    # Construct A and b based on each frame's rotation and translation
-    for frame_num, frame in point_cloud.items():
-        # Extract rotation matrix and translation vector
-        R_j = frame.rotation
-        p_j = frame.translation.reshape(3, 1)  # Ensure p_j is a 3x1 vector
+    if N_frames < 2:
+        raise ValueError("Underdetemined system. Need at least 2 frames.")
 
-        # Append the values to construct the matrix A and vector b
-        # A_j = [R_j | -I], where I is the identity matrix
-        A_j = np.hstack((R_j, -np.eye(3)))
+    A_list = []
+    b_list = []
 
-        A.append(A_j)
-        b.append(-p_j)
+    for k in range(N_frames):
+        R_k = F_G[k][:3, :3]
+        t_k = F_G[k][:3, 3]
 
+        A_k = np.hstack((R_k, -np.eye(3)))
+        b_k = -t_k.reshape(3, 1)
 
-    # Stack A and b vertically to create the final system of equations
-    A = np.vstack(A)
-    b = np.vstack(b)
+        A_list.append(A_k)
+        b_list.append(b_k)
 
-
-    # Solve the least squares problem to find p_t and p_pivot
-    # A * x = b, where x = [p_t, p_pivot]
+    A = np.vstack(A_list)
+    b = np.vstack(b_list)
     x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
-    
-    # Extract p_t and p_pivot from the solution vector
-    p_t = x[:3].reshape(3, 1)
-    p_pivot = x[3:].reshape(3, 1)
-
-    # Extract t_G and p_pivot
     t_G = x[:3].flatten()
     p_pivot = x[3:].flatten()
 
@@ -51,44 +41,35 @@ def solve_for_pointer_and_dimple(point_cloud):
 
 def solve_for_pointer_and_dimple(point_cloud):
     """
-    Solves the overdetermined system to find p_t and p_pivot using the equation:
+    Solves the overdetermined system to find p_t and p_pivot:
     R_j * p_t + p_j = p_pivot
 
     Parameters:
-    point_cloud (dict): Dictionary containing frame data with rotation and translation.
-                                Each value in the dictionary should have 'rotation' and 'translation' attributes.
+    point_cloud: rotation and translation data
 
     Returns:
-    tuple: (p_t, p_pivot) where both are 3x1 numpy arrays.
+    p_t, p_pivot 3x1 vectors
     """
     A = []
     b = []
 
-    # Construct A and b based on each frame's rotation and translation
     for frame_num, frame in point_cloud.items():
-        # Extract rotation matrix and translation vector
         R_j = frame.rotation
-        p_j = frame.translation.reshape(3, 1)  # Ensure p_j is a 3x1 vector
+        p_j = frame.translation.reshape(3, 1) 
 
-        # Append the values to construct the matrix A and vector b
-        # A_j = [R_j | -I], where I is the identity matrix
+        # A_j = [R_j | -I]
         A_j = np.hstack((R_j, -np.eye(3)))
 
         A.append(A_j)
         b.append(-p_j)
 
-
-    # Stack A and b vertically to create the final system of equations
     A = np.vstack(A)
     b = np.vstack(b)
 
  
+    #x = [p_t, p_pivot]
+    x, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
 
-    # Solve the least squares problem to find p_t and p_pivot
-    # A * x = b, where x = [p_t, p_pivot]
-    x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
-
-    #Extract p_t and p_pivot from the solution vector
     p_t = x[:3].reshape(3, 1)
     p_pivot = x[3:].reshape(3, 1)
 
