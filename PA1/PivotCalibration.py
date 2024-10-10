@@ -52,6 +52,10 @@ def solve_for_pointer_and_dimple(point_cloud):
     A = []
     b = []
 
+    N_frames = point_cloud.shape[0]
+    if N_frames < 2:
+        raise ValueError("Underdetemined system. Need at least 2 frames.")
+
     for frame_num, frame in point_cloud.items():
         R_j = frame.rotation
         p_j = frame.translation.reshape(3, 1) 

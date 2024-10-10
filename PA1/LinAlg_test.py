@@ -88,7 +88,7 @@ class TestFrame(unittest.TestCase):
 
 class TestTransformPoints(unittest.TestCase):
     def test_transform_points_random(self):
-        random_points = Debug.generate_random_points(10)
+        random_points = Debug.generate_random_points(int(random.uniform(3,20)))
         theta, phi = random.uniform(0, np.pi), random.uniform(0, np.pi)
         translation = LA.Vector(random.uniform(0, 2000), random.uniform(0, 2000), random.uniform(0, 2000))
         transformation_matrix = Debug.create_transformation_matrix(theta, phi, translation)
@@ -98,7 +98,7 @@ class TestTransformPoints(unittest.TestCase):
             self.assertFalse(np.allclose(original.as_array(), transformed.as_array()))
     
     def test_transform_points_random_far(self):
-        random_points = Debug.generate_random_points(10)
+        random_points = Debug.generate_random_points(int(random.uniform(2,20)))
         theta, phi = random.uniform(0, np.pi), random.uniform(0, np.pi)
         translation = LA.Vector(random.uniform(3000, 10000), random.uniform(3000, 10000), random.uniform(3000, 10000))
         transformation_matrix = Debug.create_transformation_matrix(theta, phi, translation)
@@ -110,7 +110,7 @@ class TestTransformPoints(unittest.TestCase):
 
 class TestPointCloudRegistration(unittest.TestCase):
     def test_point_cloud_registration(self):
-        random_points = Debug.generate_random_points(10)
+        random_points = Debug.generate_random_points(int(random.uniform(2,20)))
         theta, phi = random.uniform(0, np.pi), random.uniform(0, np.pi)
         translation = LA.Vector(random.uniform(0, 2000), random.uniform(0, 2000), random.uniform(0, 2000))
         transformation_matrix = Debug.create_transformation_matrix(theta, phi, translation)
@@ -126,7 +126,7 @@ class TestPointCloudRegistration(unittest.TestCase):
         self.assertTrue(np.allclose(t, ground_truth_t, atol=1e-2))
     
     def test_point_cloud_registration_far(self):
-        random_points = Debug.generate_random_points(10)
+        random_points = Debug.generate_random_points(int(random.uniform(2,20)))
         theta, phi = random.uniform(0, np.pi), random.uniform(0, np.pi)
         translation = LA.Vector(random.uniform(3000, 10000), random.uniform(3000, 10000), random.uniform(3000, 10000))
         transformation_matrix = Debug.create_transformation_matrix(theta, phi, translation)
@@ -141,8 +141,24 @@ class TestPointCloudRegistration(unittest.TestCase):
         self.assertTrue(np.allclose(R, ground_truth_R, atol=1e-2))
         self.assertTrue(np.allclose(t, ground_truth_t, atol=1e-2))
 
+    def test_point_cloud_registration_noisy(self):
+        random_points = Debug.generate_random_points(int(random.uniform(4,20)), noise = 5)
+        theta, phi = random.uniform(0, np.pi), random.uniform(0, np.pi)
+        translation = LA.Vector(random.uniform(3000, 10000), random.uniform(3000, 10000), random.uniform(3000, 10000))
+        transformation_matrix = Debug.create_transformation_matrix(theta, phi, translation)
+        transformed_points = LA.transform_points(transformation_matrix, random_points)
+
+        transformed_points_np = Debug.vectors_to_numpy(transformed_points)
+        random_points_np = Debug.vectors_to_numpy(random_points)
+
+        R, t = LA.point_cloud_registration(transformed_points_np, random_points_np)
+        ground_truth_R, ground_truth_t = transformation_matrix.rotation, transformation_matrix.translation
+
+        self.assertTrue(np.allclose(R, ground_truth_R, atol=1))
+        self.assertTrue(np.allclose(t, ground_truth_t, atol=1))
+
     def test_point_cloud_registration_vs_real(self):
-        random_points = Debug.generate_random_points(10)
+        random_points = Debug.generate_random_points(int(random.uniform(2,20)))
         theta, phi = random.uniform(0, np.pi), random.uniform(0, np.pi)
         translation = LA.Vector(random.uniform(0, 2000), random.uniform(0, 2000), random.uniform(0, 2000))
         transformation_matrix = Debug.create_transformation_matrix(theta, phi, translation)

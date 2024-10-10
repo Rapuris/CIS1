@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Union
 from scipy.optimize import least_squares
+from scipy.optimize import lsq_linear
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -172,6 +173,7 @@ def point_cloud_registration(target_points, source_points):
     R (np.ndarray): 3x3 optimal rotation matrix.
     t (np.ndarray): 3x1 translation vector.
     """
+
     # Initial guess for parameters: rotation = I, translation = difference between midpoints
     initial_params = np.zeros(6)
     initial_t = compute_midpoint(target_points) - compute_midpoint(source_points)
@@ -183,7 +185,6 @@ def point_cloud_registration(target_points, source_points):
     rvec_optimal = result.x[:3]
     t_optimal = result.x[3:]
     R_optimal = rodrigues_to_rotation_matrix(rvec_optimal)
-
     return R_optimal, t_optimal
 
 def perform_calibration_registration(calreadings_frames, calbody_vectors, vector_type):

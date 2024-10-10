@@ -145,11 +145,16 @@ def visualize_H0_vectors(H0_vectors):
     plt.legend()
     plt.show()
 
-def generate_random_points(num_points: int):
+def generate_random_points(num_points: int, noise = 0.0):
     points = []
     for _ in range(num_points):
         x = random.uniform(0,200)
         y = random.uniform(0,200)
         z = random.uniform(0,200)
+
+        x = x + np.random.normal(-noise, noise)
+        y = y + np.random.normal(-noise, noise)
+        z = z + np.random.normal(-noise, noise)
+
         points.append(LA.Vector(x, y, z))
     return points
