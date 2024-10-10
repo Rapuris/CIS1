@@ -269,38 +269,6 @@ def compute_rmse(transformed_points, target_points):
     """
     return np.sqrt(np.mean((transformed_points - target_points) ** 2))
 
-def plot_3d_transformed_vs_target(frame_num, transformed_vectors, target_vectors):
-    """
-    Plot the transformed source vectors and the target vectors in 3D space.
-    
-    Args:
-    frame_num (int): Frame number to display in the title.
-    transformed_vectors (list of Vector): List of transformed Vector objects.
-    target_vectors (list of Vector): List of target Vector objects.
-    """
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    # Convert transformed_vectors and target_vectors from lists of Vector objects to NumPy arrays
-    transformed_points = np.array([vector.as_array() for vector in transformed_vectors])
-    target_points = np.array([vector.as_array() for vector in target_vectors])
-
-    # Plot transformed points in red
-    ax.scatter(transformed_points[:, 0], transformed_points[:, 1], transformed_points[:, 2], c='r', marker='o', label='Transformed points')
-
-    # Plot target points in blue
-    ax.scatter(target_points[:, 0], target_points[:, 1], target_points[:, 2], c='b', marker='^', label='Target points')
-
-    # Set labels
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-
-    # Add legend and title
-    plt.legend()
-    plt.title(f'3D Plot of Transformed points vs Target points (Frame {frame_num})')
-    plt.show()
-
 def compute_C_expected_for_all_frames(F_D_dict, F_A_dict, c_vectors):
     """
     Compute C(expected) for each frame using the Frame class and the formula C(expected) = F_D^−1 • F_A • c_i.
@@ -412,9 +380,6 @@ def combine_point_cloud_frames(F_D_opt_point_cloud, F_H_opt_point_cloud):
     return combined_frames
 
 
-
-
-
 def compute_local_marker_vectors(frames_data, centroid_vectors, vector_type):
     """
     Compute the hi vectors for each frame, where hi = Hi - H0.
@@ -440,12 +405,6 @@ def compute_local_marker_vectors(frames_data, centroid_vectors, vector_type):
 
 
 
-
-
-
-
-
-
 def translate_points(observations, midpoint):
     """
     Translate the observations relative to the midpoint G0.
@@ -455,36 +414,6 @@ def translate_points(observations, midpoint):
     """
     return observations - midpoint
 
-def process_frame_midpoints(frames):
-    """
-    For each frame, computes the midpoint of the observed points and translates
-    the observations relative to this midpoint.
-
-    Args:
-    frames (list): A list of frames where each frame is a list of Vector objects representing 3D points.
-
-    Returns:
-    list: A list of frames where each frame contains the translated points g_j relative to the midpoint G_0.
-    """
-    translated_frames = {}
-
-    for (frame_num, frame) in frames.items():
-        # Convert the frame (list of Vector objects) to a NumPy array for midpoint computation
-        #print(frame)
-        observations = np.array([v.coords for v in frame])
-
-        # Step 1: Compute the midpoint G_0 for the frame
-        G0 = compute_midpoint(observations)
-
-        # Step 2: Translate the points relative to the midpoint
-        translated_observations = translate_points(observations, G0)
-
-        # Convert the translated points back to Vector objects
-        translated_vectors = [Vector(g[0], g[1], g[2]) for g in translated_observations]
-        
-        translated_frames[frame_num] = translated_vectors
-
-    return translated_frames
 
 def perform_pivot_registration_for_frames(G_points_frames, small_g_j, vector_type):
     """
@@ -509,48 +438,6 @@ def perform_pivot_registration_for_frames(G_points_frames, small_g_j, vector_typ
         registration_results[frame_num] = Frame(R_optimal, t_optimal)
 
     return registration_results
-
-def solve_for_pointer_and_dimple(point_cloud):
-    """
-    Solves the overdetermined system to find p_t and p_pivot using the equation:
-    R_j * p_t + p_j = p_pivot
-
-    Parameters:
-    point_cloud (dict): Dictionary containing frame data with rotation and translation.
-                                Each value in the dictionary should have 'rotation' and 'translation' attributes.
-
-    Returns:
-    tuple: (p_t, p_pivot) where both are 3x1 numpy arrays.
-    """
-    A = []
-    b = []
-
-    # Construct A and b based on each frame's rotation and translation
-    for frame_num, frame in point_cloud.items():
-        # Extract rotation matrix and translation vector
-        R_j = frame.rotation
-        p_j = frame.translation.reshape(3, 1)  # Ensure p_j is a 3x1 vector
-
-        # Append the values to construct the matrix A and vector b
-        # A_j = [R_j | -I], where I is the identity matrix
-        A_j = np.hstack((R_j, -np.eye(3)))
-
-        A.append(A_j)
-        b.append(p_j)  # Append p_j instead of -p_j to match the correct stacking
-
-    # Stack A and b vertically to create the final system of equations
-    A = np.vstack(A)
-    b = np.vstack(b)
-
-    # Solve the least squares problem to find p_t and p_pivot
-    # A * x = b, where x = [p_t, p_pivot]
-    x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
-
-    # Extract p_t and p_pivot from the solution vector
-    p_t = x[:3].reshape(3, 1)
-    p_pivot = x[3:].reshape(3, 1)
-
-    return p_t, p_pivot
 
 
 

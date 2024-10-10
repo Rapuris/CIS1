@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import LinAlg as LA
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -81,6 +82,37 @@ def plot_original_vs_transformed(original_points, transformed_points):
     plt.title('Original Points vs Transformed Points')
     plt.show()
 
+def plot_3d_transformed_vs_target(frame_num, transformed_vectors, target_vectors):
+    """
+    Plot the transformed source vectors and the target vectors in 3D space.
+    
+    Args:
+    frame_num (int): Frame number to display in the title.
+    transformed_vectors (list of Vector): List of transformed Vector objects.
+    target_vectors (list of Vector): List of target Vector objects.
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Convert transformed_vectors and target_vectors from lists of Vector objects to NumPy arrays
+    transformed_points = np.array([vector.as_array() for vector in transformed_vectors])
+    target_points = np.array([vector.as_array() for vector in target_vectors])
+
+    # Plot transformed points in red
+    ax.scatter(transformed_points[:, 0], transformed_points[:, 1], transformed_points[:, 2], c='r', marker='o', label='Transformed points')
+
+    # Plot target points in blue
+    ax.scatter(target_points[:, 0], target_points[:, 1], target_points[:, 2], c='b', marker='^', label='Target points')
+
+    # Set labels
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    # Add legend and title
+    plt.legend()
+    plt.title(f'3D Plot of Transformed points vs Target points (Frame {frame_num})')
+    plt.show()
 
 
 def visualize_H0_vectors(H0_vectors):
@@ -108,48 +140,12 @@ def visualize_H0_vectors(H0_vectors):
     plt.legend()
     plt.show()
 
-
-
-def fit_sphere(points):
-    """
-    Fits a sphere to a set of 3D points using nonlinear least squares optimization.
-
-    Parameters:
-    points (array-like): An Nx3 array or list of (x, y, z) coordinates.
-
-    Returns:
-    center (numpy.ndarray): The (x, y, z) coordinates of the sphere's center.
-    radius (float): The radius of the sphere.
-    residuals (float): The sum of squared residuals of the fit.
-    """
-
-    # Convert input to a NumPy array
-    points = np.asarray(points)
-    x = points[:, 0]
-    y = points[:, 1]
-    z = points[:, 2]
-
-    # Initial guess for the sphere's center (mean of the points)
-    x0 = np.mean(x)
-    y0 = np.mean(y)
-    z0 = np.mean(z)
-    r0 = np.mean(np.sqrt((x - x0)**2 + (y - y0)**2 + (z - z0)**2))
-
-    initial_guess = np.array([x0, y0, z0, r0])
-
-    # Define the residuals function
-    def residuals(params, x, y, z):
-        xc, yc, zc, r = params
-        return np.sqrt((x - xc)**2 + (y - yc)**2 + (z - zc)**2) - r
-
-    # Perform the least squares optimization
-    result = least_squares(residuals, initial_guess, args=(x, y, z))
-
-    # Extract the optimized parameters
-    xc, yc, zc, r = result.x
-    residual_sum = 2 * result.cost  # total sum of squared residuals
-
-    center = np.array([xc, yc, zc])
-    radius = r
-
-    return center, radius, residual_sum
+# Function to generate random points within the box (1,1,1) to (2,2,2)
+def generate_random_points(num_points: int):
+    points = []
+    for _ in range(num_points):
+        x = random.uniform(0,200)
+        y = random.uniform(0,200)
+        z = random.uniform(0,200)
+        points.append(LA.Vector(x, y, z))
+    return points
