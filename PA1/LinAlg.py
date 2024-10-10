@@ -10,11 +10,6 @@ class Vector:
     def __init__(self, x: float, y: float, z: float) -> None:
         """
         Initializes a Vector object with x, y, z coordinates.
-
-        Parameters:
-        x (float): X coordinate
-        y (float): Y coordinate
-        z (float): Z coordinate
         """
         self.coords = np.array([x, y, z], dtype=np.float32)
 
@@ -27,12 +22,6 @@ class Vector:
     def __add__(self, other: 'Vector') -> 'Vector':
         """
         Adds two Vector objects.
-
-        Args:
-        other (Vector): Another Vector.
-
-        Returns:
-        Vector: Sum of the two vectors.
         """
         result = self.coords + other.coords
         return Vector(result[0], result[1], result[2])
@@ -40,12 +29,6 @@ class Vector:
     def __sub__(self, other: 'Vector') -> 'Vector':
         """
         Subtracts two Vector objects.
-
-        Args:
-        other (Vector): Another Vector.
-
-        Returns:
-        Vector: Difference of the two vectors.
         """
         result = self.coords - other.coords
         return Vector(result[0], result[1], result[2])
@@ -53,24 +36,12 @@ class Vector:
     def dot(self, other: 'Vector') -> float:
         """
         Computes the dot product of two Vector objects.
-
-        Args:
-        other (Vector): Another Vector.
-
-        Returns:
-        float: Dot product of the two vectors.
         """
         return np.dot(self.coords, other.coords)
 
     def cross(self, other: 'Vector') -> 'Vector':
         """
         Computes the cross product of two Vector objects.
-
-        Args:
-        other (Vector): Another Vector.
-
-        Returns:
-        Vector: Cross product of the two vectors.
         """
         result = np.cross(self.coords, other.coords)
         return Vector(result[0], result[1], result[2])
@@ -78,9 +49,6 @@ class Vector:
     def magnitude(self) -> float:
         """
         Computes the magnitude of the Vector.
-
-        Returns:
-        float: Magnitude of the vector.
         """
         return np.linalg.norm(self.coords)
     
@@ -97,7 +65,6 @@ class Frame:
         """
         Frame object initialized with rotation and translation.
 
-        Parameters:
         r (np.ndarray): Rotation matrix (3x3)
         t (np.ndarray): Translation vector (3x1)
         """
@@ -122,9 +89,6 @@ class Frame:
     def inv(self) -> 'Frame':
         """
         Returns the inverse of the Frame.
-
-        Returns:
-        Frame: The inverted Frame.
         """
         return Frame(self.rotation.T, -(self.rotation.T @ self.translation))
 
@@ -173,8 +137,6 @@ def point_cloud_registration(target_points, source_points):
     R (np.ndarray): 3x3 optimal rotation matrix.
     t (np.ndarray): 3x1 translation vector.
     """
-
-    # Initial guess for parameters: rotation = I, translation = difference between midpoints
     initial_params = np.zeros(6)
     initial_t = compute_midpoint(target_points) - compute_midpoint(source_points)
     initial_params[3:] = initial_t
@@ -314,8 +276,8 @@ def compute_centroid_vectors(frames_data, vector_type):
 
 def compute_local_marker_vectors(frames_data, vector_type):
     """
-    Compute the local marker vectors (g_j or h_j) for each frame, where the vectors
-    are calculated relative to the mean of the vectors in the first frame.
+    Compute the local marker vectors (g_j or h_j) defined by first frame because
+    we defined the firs frame to have no rotation
 
     Parameters:
     frames_data (dict): Dictionary containing frame data with vectors for each frame.
@@ -340,7 +302,6 @@ def compute_local_marker_vectors(frames_data, vector_type):
 def perform_pivot_registration(G_points_frames, small_g_j, vector_type):
     """
     Perform point cloud registration for each frame
-    
     
     Returns:
     dict: Dictionary with frame numbers as keys and (R, t) as values where R is the rotation matrix and t is the translation vector.

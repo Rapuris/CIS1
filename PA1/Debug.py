@@ -16,7 +16,7 @@ def vectors_to_numpy(points):
 
 def create_transformation_matrix(theta, phi, translation):
     """
-    Create a Frame object (transformation matrix) from given rotation angles and translation vector.
+    Create a Frame object (transformation matrix)
     """
     R_z = np.array([
         [np.cos(theta), -np.sin(theta), 0],
@@ -82,20 +82,18 @@ def plot_3d_transformed_vs_target(frame_num, transformed_vectors, target_vectors
     ax.set_zlabel('Z')
 
     plt.legend()
-    plt.title(f'3D Plot of Transformed points vs Target points (Frame {frame_num})')
+    plt.title(f'Transformed points vs Target points (Frame {frame_num})')
     plt.show()
 
 
 def visualize_vectors(d_vectors, a_vectors, c_vectors):
     """
-    Visualize the vectors using matplotlib.
+    Visualize the vectors from CALBODY.TXT
     """
-    # Extract coordinates from Vector objects
     d_coords = np.array([vec.coords for vec in d_vectors])
     a_coords = np.array([vec.coords for vec in a_vectors])
     c_coords = np.array([vec.coords for vec in c_vectors])
 
-    # Plot d_vectors
     fig = plt.figure(figsize=(15, 5))
     ax1 = fig.add_subplot(131, projection='3d')
     ax1.scatter(d_coords[:, 0], d_coords[:, 1], d_coords[:, 2], c='r', marker='o')
@@ -126,7 +124,7 @@ def visualize_vectors(d_vectors, a_vectors, c_vectors):
 
 def visualize_H0_vectors(H0_vectors):
     """
-    Visualize the H0 vectors in 3D space, with each vector originating from the origin.
+    Visualize the H0 vectors with tail
     """
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')

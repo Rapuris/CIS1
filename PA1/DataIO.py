@@ -5,8 +5,9 @@ def read_calbody_file(file_path: str):
     """
     Reads a CALBODY.TXT file and extracts the d_i, a_i, and c_i vectors into separate lists.
 
-    Returns:
-    Three lists containing d_i, a_i, and c_i vectors
+    d_i = EM tracker base -> EM tracker base markers
+    a_i = calibration object base -> calibration object optical markers
+    c_i = EM calibration object base -> calibration object EM markers
     """
     d_vectors = []  
     a_vectors = []  
@@ -41,12 +42,9 @@ def read_calreadings_file(file_path: str):
     Reads a CALREADINGS.TXT file and organizes data by frame number. Each frame contains three lists of Vector objects
     for D_i, A_i, and C_i vectors.
 
-
-    Returns:
-    dict: A dictionary where the key is the frame number, and the value is a dictionary containing:
-        - D_vectors: List of Vector objects for D_i coordinates
-        - A_vectors: List of Vector objects for A_i coordinates
-        - C_vectors: List of Vector objects for C_i coordinates
+    D_i = Opitcal tracker base -> EM tracker base markers
+    A_i = Optical tracker base -> calibration object optical markers
+    C_i = EM tracker base -> calibration object EM markers
     """
     frames_data = {}
 
@@ -90,12 +88,7 @@ def read_empivot_file(file_path: str):
     """
     Reads EMPIVOT.TXT file and extracts the G_i points for each frame.
 
-    Args:
-    file_path (str): Path to the EMPIVOT.TXT file.
-
-    Returns:
-    A list of frames containing a list of G_i vectors (Nx3 array),
-           the number of EM markers (N_G), and the number of frames (N_frames).
+    G_i = EM tracker base -> EM tracker markers
     """
     frames = {}  
 
@@ -123,14 +116,8 @@ def read_optpivot_file(file_path: str):
     """
     Reads OPTPIVOT.TXT file and extracts the D_i and H_i points for each frame.
 
-    Args:
-    file_path (str): Path to the OPTPIVOT.TXT file.
-
-    Returns:
-    tuple: frames dictionary containing a list of D_i and H_i vectors (Nx3 array), (Nx3 array)
-        the number of OPT markers on EM base (N_D)
-        the number of OPT markers on probe (N_H)
-        the number of frames (N_frames).
+    H_i = optical tracker base -> optical pointer markers
+    D_i = Optical tracker base -> EM tracker base markers
     """
     frames = {}  
 
