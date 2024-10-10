@@ -88,16 +88,19 @@ def write_data(outfile, C_expected_vectors, EM_probe_pos, OPT_probe_pos):
     with open(outfile, 'w') as file:
         # Write NC, Nframes, and output file name on the same line
         file.write(f"{NC}, {Nframes}, {outfile}\n")
-        file.write(f"{EM_probe_pos[0]}, {EM_probe_pos[1]}, {EM_probe_pos[2]}\n")
-
-        file.write(f"{OPT_probe_pos[0]}, {OPT_probe_pos[1]}, {OPT_probe_pos[2]}\n")
-
+        
+        # Write EM probe positions, rounded to two decimal places
+        file.write(f"{EM_probe_pos[0]:.2f}, {EM_probe_pos[1]:.2f}, {EM_probe_pos[2]:.2f}\n")
+        
+        # Write OPT probe positions, rounded to two decimal places
+        file.write(f"{OPT_probe_pos[0]:.2f}, {OPT_probe_pos[1]:.2f}, {OPT_probe_pos[2]:.2f}\n")
+        
+        # Write the coordinates of C_expected for each frame, rounded to two decimal places
         for frame_num, vectors in C_expected_vectors.items():
             for vector in vectors:
-                # Output format for each coordinate set: x_i, y_i, z_i
-                file.write(f"{vector.coords[0]}, {vector.coords[1]}, {vector.coords[2]}\n")
+                # Output format for each coordinate set: x_i, y_i, z_i, rounded to two decimals
+                file.write(f"{vector.coords[0]:.2f}, {vector.coords[1]:.2f}, {vector.coords[2]:.2f}\n")
 
-        #print(f"Data written to {outfile}")
 
 
 if __name__ == '__main__':
