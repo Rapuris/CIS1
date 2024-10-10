@@ -184,5 +184,60 @@ class TestPointCloudRegistration(unittest.TestCase):
         for proposed, truth in zip(proposed_transformed_points, transformed_points):
             self.assertTrue(np.allclose(proposed.as_array(), truth.as_array(), atol=1e-2))
 
+
+class TestCentroidAndLocalMarkerVectors(unittest.TestCase):
+    def setUp(self):
+        self.frames_data = {
+            1: {'H_vectors': [LA.Vector(1, 2, 3), LA.Vector(4, 5, 6)], 'G_vectors': [LA.Vector(7, 8, 9), LA.Vector(10, 11, 12)]},
+            2: {'H_vectors': [LA.Vector(2, 3, 4), LA.Vector(5, 6, 7)], 'G_vectors': [LA.Vector(8, 9, 10), LA.Vector(11, 12, 13)]}
+        }
+
+    def test_compute_centroid_vectors(self):
+        """Test computing centroid vectors."""
+        centroid_vectors = LA.compute_centroid_vectors(self.frames_data, 'H')
+        expected_centroid_1 = LA.Vector(2.5, 3.5, 4.5)
+        expected_centroid_2 = LA.Vector(3.5, 4.5, 5.5)
+        self.assertTrue(np.allclose(centroid_vectors[0].as_array(), expected_centroid_1.as_array()))
+        self.assertTrue(np.allclose(centroid_vectors[1].as_array(), expected_centroid_2.as_array()))
+
+    def test_compute_local_marker_vectors(self):
+        """Test computing local marker vectors."""
+        local_vectors = LA.compute_local_marker_vectors(self.frames_data, 'G')
+        expected_local_vectors = [LA.Vector(-1.5, -1.5, -1.5), LA.Vector(1.5, 1.5, 1.5)]
+        self.assertTrue(np.allclose(local_vectors[0].as_array(), expected_local_vectors[0].as_array()))
+        self.assertTrue(np.allclose(local_vectors[1].as_array(), expected_local_vectors[1].as_array()))
+
+    def test_empty_frame_data(self):
+        """Test compute_centroid_vectors and compute_local_marker_vectors with empty frame data."""
+        empty_frames_data = {}
+        centroid_vectors = LA.compute_centroid_vectors(empty_frames_data, 'H')
+        local_vectors = LA.compute_local_marker_vectors(empty_frames_data, 'G')
+        self.assertEqual(centroid_vectors, [])
+        self.assertEqual(local_vectors, [])
+
+    def test_single_frame_data(self):
+        """Test compute_centroid_vectors and compute_local_marker_vectors with a single frame."""
+        single_frame_data = {
+            1: {'H_vectors': [LA.Vector(1, 2, 3), LA.Vector(4, 5, 6)], 'G_vectors': [LA.Vector(7, 8, 9), LA.Vector(10, 11, 12)]}
+        }
+        centroid_vectors = LA.compute_centroid_vectors(single_frame_data, 'H')
+        expected_centroid = LA.Vector(2.5, 3.5, 4.5)
+        self.assertTrue(np.allclose(centroid_vectors[0].as_array(), expected_centroid.as_array()))
+
+        local_vectors = LA.compute_local_marker_vectors(single_frame_data, 'G')
+        expected_local_vectors = [LA.Vector(-1.5, -1.5, -1.5), LA.Vector(1.5, 1.5, 1.5)]
+        self.assertTrue(np.allclose(local_vectors[0].as_array(), expected_local_vectors[0].as_array()))
+        self.assertTrue(np.allclose(local_vectors[1].as_array(), expected_local_vectors[1].as_array()))
+
+    def test_multiple_vector_types(self):
+        """Test compute_centroid_vectors with different vector types ('H' and 'G')."""
+        centroid_vectors_H = LA.compute_centroid_vectors(self.frames_data, 'H')
+        expected_centroid_H_1 = LA.Vector(2.5, 3.5, 4.5)
+        self.assertTrue(np.allclose(centroid_vectors_H[0].as_array(), expected_centroid_H_1.as_array()))
+
+        centroid_vectors_G = LA.compute_centroid_vectors(self.frames_data, 'G')
+        expected_centroid_G_1 = LA.Vector(8.5, 9.5, 10.5)
+        self.assertTrue(np.allclose(centroid_vectors_G[0].as_array(), expected_centroid_G_1.as_array()))
+
 if __name__ == '__main__':
     unittest.main()
