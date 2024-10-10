@@ -32,7 +32,7 @@ def pivot_calibration(F_G):
 
     A = np.vstack(A_list)
     b = np.vstack(b_list)
-    x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
+    x, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
     t_G = x[:3].flatten()
     p_pivot = x[3:].flatten()
 
@@ -41,8 +41,7 @@ def pivot_calibration(F_G):
 
 def solve_for_pointer_and_dimple(point_cloud):
     """
-    Solves the overdetermined system to find p_t and p_pivot:
-    R_j * p_t + p_j = p_pivot
+    Pivot calibration to find the tip position (t_H) and the pivot point (p_pivot) when tip is in the dimple.
 
     Parameters:
     point_cloud: rotation and translation data
