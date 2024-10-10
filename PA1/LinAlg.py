@@ -383,28 +383,32 @@ def compute_centroid_vectors(frames_data, vector_type):
 
     return centroid_vectors
 
-def compute_local_marker_vectors(frames_data, centroid_vectors, vector_type):
+def compute_local_marker_vectors(frames_data, vector_type):
     """
-    Compute the hi vectors for each frame, where hi = Hi - H0.
+    Compute the local marker vectors (g_j or h_j) for each frame, where the vectors
+    are calculated relative to the mean of the vectors in the first frame.
 
     Parameters:
     frames_data (dict): Dictionary containing frame data with vectors for each frame.
-    centroid_vectors (list of Vector): List of centroid vectors for each frame.
     vector_type (str): The type of vector to use ('H' or 'G').
 
     Returns:
-    dict: Dictionary with keys as 'frame n' and values as a list of hi Vectors for each frame.
+    np.ndarray: Array of local vectors (g_j or h_j) for the first frame.
     """
     vector_key = f'{vector_type}_vectors'
-    hi_vectors = {}
 
-    for frame_num, frame_data in frames_data.items():
-        centroid_coords = centroid_vectors[frame_num - 1].coords
-        coords = [vec.coords for vec in frame_data[vector_key]]
-        hi_list = [Vector(*(coords[j] - centroid_coords)) for j in range(len(coords))]
-        hi_vectors[frame_num] = hi_list
+    # Get the vectors for the first frame (assuming frames_data uses keys like 'frame1', 'frame2', etc.)
+    G_first = np.array([vec.coords for vec in frames_data[1][vector_key]])
 
-    return hi_vectors
+    # Compute the centroid (mean) of the vectors in the first frame
+    G_zero = np.mean(G_first, axis=0)
+
+    # Calculate the local marker vectors by subtracting the mean
+    g_j = G_first - G_zero
+    g_j = [Vector(*coords) for coords in g_j]
+
+    return g_j
+
 
 
 
@@ -507,7 +511,7 @@ def perform_pivot_registration_for_frames(G_points_frames, small_g_j, vector_typ
 # Perform registration for each frame
     for frame_num, frame_data in G_points_frames.items():
        
-        source_points = np.array([vec.coords for vec in small_g_j[frame_num]])
+        source_points = np.array([vec.coords for vec in small_g_j])
         target_points = np.array([vec.coords for vec in frame_data[vector_key]])
 
         # Perform point cloud registration using least squares to find R and t
@@ -571,6 +575,32 @@ def visualize_vectors(d_vectors, a_vectors, c_vectors):
     plt.show()
 
 
+def combine_point_cloud_frames(F_D_opt_point_cloud, F_H_opt_point_cloud):
+    """
+    Combine two point cloud frame dictionaries by multiplying their transformations in order.
 
+    Parameters:
+    F_D_opt_point_cloud (dict): Dictionary containing the first set of frames.
+    F_H_opt_point_cloud (dict): Dictionary containing the second set of frames.
+
+    Returns:
+    dict: Combined dictionary with frame numbers as keys and Frame objects as values.
+    """
+    combined_frames = {}
+
+    # Iterate over frame numbers present in both dictionaries
+    for frame_num in F_D_opt_point_cloud:
+        if frame_num in F_H_opt_point_cloud:
+            # Get the Frame objects from both dictionaries
+            frame_D = F_D_opt_point_cloud[frame_num]
+            frame_H = F_H_opt_point_cloud[frame_num]
+
+#Multiply the frames to combine transformations
+            combined_frame = frame_D @ frame_H
+
+#Store the result in the combined dictionary
+            combined_frames[frame_num] = combined_frame
+
+    return combined_frames
 
 
