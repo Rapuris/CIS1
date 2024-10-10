@@ -46,8 +46,8 @@ def pivot_calibration(F_G, G_0):
     return t_G, p_pivot
 
 # Example usage (assuming F_G and G_0 are numpy arrays of correct dimensions)
-F_G = np.array([...])  # Shape: (N_frames, 4, 4)
-G_0 = np.array([...])  # Shape: (N_frames, 3)
-t_G, p_pivot = pivot_calibration(F_G, G_0)
-print("t_G:", t_G)
-print("p_pivot:", p_pivot)
+#F_G = np.array([...])  # Shape: (N_frames, 4, 4)
+#G_0 = np.array([...])  # Shape: (N_frames, 3)
+#t_G, p_pivot = pivot_calibration(F_G, G_0)
+#print("t_G:", t_G)
+#print("p_pivot:", p_pivot)
