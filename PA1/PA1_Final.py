@@ -15,25 +15,44 @@ Created on Oct 5, 2024
 '''
 
 def problem_4(calbody_filepath, calreadings_filepath):
+    """
+    Computes the expected C vectors for each frame using calibration data.
+
+    Parameters:
+    calbody_filepath (str): Path to the calbody file containing d, a, and c vectors.
+    calreadings_filepath (str): Path to the calreadings file containing frame data.
+
+    Returns:
+    dict: A dictionary where keys are frame numbers and values are lists of C_expected vectors.
+    """
     d_vectors, a_vectors, c_vectors, N_D, N_A, N_C = io.read_calbody_file(calbody_filepath)
     frames_data = io.read_calreadings_file(calreadings_filepath)
-    #PART A
+
     F_A_point_cloud = LA.perform_calibration_registration(frames_data, a_vectors, vector_type='A')
-    #PART B
     F_D_point_cloud = LA.perform_calibration_registration(frames_data, d_vectors, vector_type='D')
-    #PART C
-    counter = 1
+
     C_expected_vectors = {}
     transformed_c_vectors = []
+
     for count in range(1, len(frames_data) + 1):
         for c_vec in c_vectors:
             transformed_c_vectors.append(F_D_point_cloud[count].inv() @ F_A_point_cloud[count] @ c_vec)
         C_expected_vectors[count] = transformed_c_vectors 
         transformed_c_vectors = []
+
     return C_expected_vectors
 
 def problem_5(empivot_filepath):
-    em_frames_data, N_G, N_frames  = io.read_empivot_file(empivot_filepath)
+    """
+    Performs pivot calibration for EM tracker data to find the pivot position.
+
+    Parameters:
+    empivot_filepath (str): Path to the empivot file containing EM tracker data.
+
+    Returns:
+    np.ndarray: 3x1 vector representing the pivot position with respect to the EM tracker frame.
+    """
+    em_frames_data, N_G, N_frames = io.read_empivot_file(empivot_filepath)
     G0_vectors = LA.compute_centroid_vectors(em_frames_data, vector_type='G')
     g_i_vectors = LA.compute_local_marker_vectors(em_frames_data, vector_type='G')
     F_G_frames = {}
@@ -42,15 +61,27 @@ def problem_5(empivot_filepath):
         em_frames_data_frame = {frame_num: em_frames_data[frame_num]}
         result = LA.perform_calibration_registration(em_frames_data_frame, g_i_vectors, vector_type='G')
         F_G_frames.update(result)
+
     F_G = np.array([np.array(frame) for frame in F_G_frames.values()])
     t_G, p_pivot = PC.pivot_calibration(F_G)
     return p_pivot
 
 def problem_6(optpivot_filepath, calbody_filepath):
-    opt_frames_data, N_D, N_H, N_frames  = io.read_optpivot_file(optpivot_filepath)
+    """
+    Solves for the dimple position using optical tracker data.
+
+    Parameters:
+    optpivot_filepath (str): Path to the optpivot file containing optical tracker data.
+    calbody_filepath (str): Path to the calbody file containing calibration data.
+
+    Returns:
+    np.ndarray: 3x1 vector representing the dimple position with respect to the optical tracker frame.
+    """
+    opt_frames_data, N_D, N_H, N_frames = io.read_optpivot_file(optpivot_filepath)
     d_vectors, a_vectors, c_vectors, N_D, N_A, N_C = io.read_calbody_file(calbody_filepath)
     H0_vectors = LA.compute_centroid_vectors(opt_frames_data, vector_type='H')
     hi_vectors = LA.compute_local_marker_vectors(opt_frames_data, vector_type='H')
+
     F_D_opt_point_cloud = LA.perform_calibration_registration(opt_frames_data, d_vectors, vector_type='D')
     F_H_opt_point_cloud = LA.perform_pivot_registration(opt_frames_data, hi_vectors, vector_type='H')
 
