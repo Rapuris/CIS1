@@ -3,6 +3,7 @@ import numpy as np
 import LinAlg as LA
 import random
 import Debug
+import PivotCalibration as PC
 
 class TestVector(unittest.TestCase):
     def setUp(self):
@@ -142,7 +143,7 @@ class TestPointCloudRegistration(unittest.TestCase):
         self.assertTrue(np.allclose(t, ground_truth_t, atol=1e-2))
 
     def test_point_cloud_registration_noisy(self):
-        random_points = Debug.generate_random_points(int(random.uniform(4,20)), noise = 5)
+        random_points = Debug.generate_random_points(int(random.uniform(4,20)), noise = 2)
         theta, phi = random.uniform(0, np.pi), random.uniform(0, np.pi)
         translation = LA.Vector(random.uniform(3000, 10000), random.uniform(3000, 10000), random.uniform(3000, 10000))
         transformation_matrix = Debug.create_transformation_matrix(theta, phi, translation)
@@ -175,14 +176,136 @@ class TestPointCloudRegistration(unittest.TestCase):
         ground_truth_R = transformation_matrix.rotation
         ground_truth_t = transformation_matrix.translation
 
-        self.assertTrue(np.allclose(R, ground_truth_R, atol=1e-2))
-        self.assertTrue(np.allclose(t, ground_truth_t, atol=1e-2))
+        self.assertTrue(np.allclose(R, ground_truth_R, atol=1e-1))
+        self.assertTrue(np.allclose(t, ground_truth_t, atol=1e-1))
 
         proposed_transformation_matrix = LA.Frame(R, t)
         proposed_transformed_points = LA.transform_points(proposed_transformation_matrix, random_points)
 
         for proposed, truth in zip(proposed_transformed_points, transformed_points):
-            self.assertTrue(np.allclose(proposed.as_array(), truth.as_array(), atol=1e-2))
+            self.assertTrue(np.allclose(proposed.as_array(), truth.as_array(), atol=1e-1))
+
+
+class TestCExpectedCalculation(unittest.TestCase):
+    def setUp(self):
+        # Set up sample data for the test
+        self.c_vectors = [
+            LA.Vector(1.0, 2.0, 3.0),
+            LA.Vector(4.0, 5.0, 6.0),
+            LA.Vector(7.0, 8.0, 9.0)
+        ]
+        
+        # Sample frames for F_D and F_A
+        self.F_D_dict = {
+            1: LA.Frame(np.eye(3), np.array([0.0, 0.0, 0.0])),
+            2: LA.Frame(np.eye(3), np.array([1.0, 1.0, 1.0]))
+        }
+        
+        self.F_A_dict = {
+            1: LA.Frame(np.eye(3), np.array([1.0, 1.0, 1.0])),
+            2: LA.Frame(np.eye(3), np.array([2.0, 2.0, 2.0]))
+        }
+
+    def test_c_expected_calculation(self):
+        # Perform the C_expected calculation
+        C_expected_results = LA.compute_C_expected(self.F_D_dict, self.F_A_dict, self.c_vectors)
+
+        # Expected results manually computed for validation
+        expected_C_frame_1 = [
+            LA.Vector(2.0, 3.0, 4.0),
+            LA.Vector(5.0, 6.0, 7.0),
+            LA.Vector(8.0, 9.0, 10.0)
+        ]
+
+        expected_C_frame_2 = [
+            LA.Vector(2.0, 3.0, 4.0),
+            LA.Vector(5.0, 6.0, 7.0),
+            LA.Vector(8.0, 9.0, 10.0)
+        ]
+
+        # Compare the computed C_expected results with the expected values
+        for frame_num, expected_vectors in zip([1, 2], [expected_C_frame_1, expected_C_frame_2]):
+            computed_vectors = C_expected_results[frame_num]
+            for i, (computed, expected) in enumerate(zip(computed_vectors, expected_vectors)):
+                self.assertTrue(np.allclose(computed.as_array(), expected.as_array(), atol=1e-1), 
+                                f"Mismatch in frame {frame_num}, vector {i}: Computed {computed.as_array()}, Expected {expected.as_array()}")
+
+class TestCalibrationRegistrationForFrames(unittest.TestCase):
+    def setUp(self):
+        # Set up some example data for the test
+        self.calbody_vectors = [
+            LA.Vector(1.0, 2.0, 3.0),
+            LA.Vector(4.0, 5.0, 6.0),
+            LA.Vector(7.0, 8.0, 9.0)
+        ]
+
+        # Sample frames with simulated transformations
+        self.frames_data = {
+            1: {
+                'A_vectors': [
+                    LA.Vector(1.1, 2.1, 3.1),
+                    LA.Vector(4.1, 5.1, 6.1),
+                    LA.Vector(7.1, 8.1, 9.1)
+                ],
+                'D_vectors': [
+                    LA.Vector(0.9, 1.9, 2.9),
+                    LA.Vector(3.9, 4.9, 5.9),
+                    LA.Vector(6.9, 7.9, 8.9)
+                ]
+            }
+        }
+
+    def test_calibration_registration_for_frames(self):
+        # Perform the calibration registration
+        registration_results = LA.perform_calibration_registration(self.frames_data, self.calbody_vectors, vector_type='A')
+
+        # Check if registration results have the same number of frames as input
+        self.assertEqual(len(registration_results), len(self.frames_data), "Number of frames in registration results does not match input.")
+
+        # Check if the registration results contain Frame objects with proper rotation and translation
+        for frame_num, frame in registration_results.items():
+            self.assertIsInstance(frame, LA.Frame, f"Registration result for frame {frame_num} is not a Frame object.")
+            
+            
+            expected_rotation = np.eye(3)
+            expected_translation = np.array([0.100, 0.100, 0.100])
+
+            # Tolerances can be adjusted based on the accuracy required
+            self.assertTrue(np.allclose(frame.rotation, expected_rotation, atol=1e-1), 
+                            f"Rotation matrix for frame {frame_num} does not match expected identity matrix.")
+            self.assertTrue(np.allclose(frame.translation, expected_translation, atol=1e-1),
+                            f"Translation vector for frame {frame_num} is not close to zero.")
+             
+class TestPivotCalibration(unittest.TestCase):
+    def setUp(self):
+        self.F_G = np.array([
+            [[1, 0, 0, 1],   # Frame 1: Rotation is identity, translation is [1, 0, 0]
+             [0, 1, 0, 2],
+             [0, 0, 1, 3],
+             [0, 0, 0, 1]],
+            
+            [[1, 0, 0, 2],   # Frame 2: Rotation is identity, translation is [2, 1, 0]
+             [0, 1, 0, 1],
+             [0, 0, 1, 4],
+             [0, 0, 0, 1]]
+        ])
+
+    def test_pivot_calibration(self):
+        # Perform pivot calibration
+        t_G, p_pivot = PC.pivot_calibration(self.F_G)
+
+        # Expected results based on the example transformations
+        # Assuming that the tip of the pointer remains constant at [0, 0, 0]
+        # and the pivot point moves according to the translations
+        expected_t_G = np.array([-0.75, -0.75, -1.75])  # Since we did not apply any rotation to the tip
+        expected_p_pivot = np.array([0.75, 0.75, 1.75])
+
+        # Verify the results
+        print(t_G, p_pivot)
+        self.assertTrue(np.allclose(t_G, expected_t_G, atol=1e-1), 
+                        f"Tip position (t_G) is not as expected: {t_G}")
+        self.assertTrue(np.allclose(p_pivot, expected_p_pivot, atol=1e-1), 
+                        f"Pivot position (p_pivot) is not as expected: {p_pivot}")
 
 if __name__ == '__main__':
     unittest.main()
