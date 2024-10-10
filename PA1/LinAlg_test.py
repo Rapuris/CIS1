@@ -196,6 +196,61 @@ class TestPointCloudRegistration(unittest.TestCase):
         self.assertTrue(np.allclose(R, ground_truth_R, atol=1e-2))
         self.assertTrue(np.allclose(t, ground_truth_t, atol=1e-2))
 
+    def test_point_cloud_registration_least_squares_vs_real(self):
+        """Test point cloud registration using least squares method."""
+        # Generate 10 random points
+        random_points = Debug.generate_random_points(10)
+
+        # Print the generated points
+        for point in random_points:
+            print(point)
+
+        theta = random.uniform(0, np.pi) 
+        phi = random.uniform(0, np.pi) 
+        translation = LA.Vector(random.uniform(0, 2000), random.uniform(0, 2000), random.uniform(0, 2000))  # Translation vector
+
+        transformation_matrix = Debug.create_transformation_matrix(theta, phi, translation)
+        print(transformation_matrix)
+
+        transformed_points = LA.transform_points(transformation_matrix, random_points)
+
+        # Convert transformed_points and random_points to numpy arrays
+        transformed_points_np = Debug.vectors_to_numpy(transformed_points)
+        random_points_np = Debug.vectors_to_numpy(random_points)
+
+        # Call the function with correct inputs
+        R, t = LA.point_cloud_registration_least_squares(transformed_points_np, random_points_np)
+
+        print("Rotation matrix:", R)
+        print("Translation vector:", t, "\n")
+
+        print("Ground truth: \n", transformation_matrix)
+
+        # Extract the rotation and translation from the transformation matrix
+        ground_truth_R = transformation_matrix[:3, :3]
+        ground_truth_t = transformation_matrix[:3, 3]
+
+        # Assert that the estimated rotation and translation are close to the ground truth
+        self.assertTrue(np.allclose(R, ground_truth_R, atol=1e-2))
+        self.assertTrue(np.allclose(t, ground_truth_t, atol=1e-2))
+
+        # Proposed transformation matrix
+        Proposed_transformation_matrix = LA.Frame(R, t)
+        Proposed_transformed_points = LA.transform_points(Proposed_transformation_matrix, random_points)
+
+        for point in Proposed_transformed_points:
+            print("Proposed point: ", point)
+
+        for point in transformed_points:
+            print("Truth point: ", point)
+
+        # Plotting original vs proposed transformed points
+        Debug.plot_original_vs_transformed(transformed_points, Proposed_transformed_points)
+
+        # Assert that the proposed transformed points are close to the truth transformed points
+        for proposed, truth in zip(Proposed_transformed_points, transformed_points):
+            self.assertTrue(np.allclose(proposed.as_array(), truth.as_array(), atol=1e-2))
+
 if __name__ == '__main__':
     unittest.main()
 
