@@ -1,7 +1,12 @@
 import numpy as np
+import random
 import LinAlg as LA
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+"""
+This file contains helper functions for debugging and visualization purposes. Not used in main code.
+"""
 
 def vectors_to_numpy(points):
     """
@@ -12,71 +17,139 @@ def vectors_to_numpy(points):
 def create_transformation_matrix(theta, phi, translation):
     """
     Create a Frame object (transformation matrix) from given rotation angles and translation vector.
-
-    Parameters:
-    theta (float): Rotation angle around the Z-axis in radians.
-    phi (float): Rotation angle around the Y-axis in radians.
-    translation (Vector): Translation vector of class Vector.
-
-    Returns:
-    Frame: Frame object containing the rotation and translation.
     """
-    # Rotation matrix for theta (around Z-axis)
     R_z = np.array([
         [np.cos(theta), -np.sin(theta), 0],
         [np.sin(theta), np.cos(theta), 0],
         [0, 0, 1]
     ])
 
-    # Rotation matrix for phi (around Y-axis)
     R_y = np.array([
         [np.cos(phi), 0, np.sin(phi)],
         [0, 1, 0],
         [-np.sin(phi), 0, np.cos(phi)]
     ])
 
-    # Combined rotation matrix (3x3)
+
     R = R_y @ R_z
-
-    # Translation vector (3,)
     t = translation.as_array()
-
-    # Create and return the Frame object
     return LA.Frame(R, t)
 
 
 def plot_original_vs_transformed(original_points, transformed_points):
     """
-    Plots the original points vs the transformed points in a 3D scatter plot.
-
-    Parameters:
-    original_points (list): List of original Vector objects.
-    transformed_points (list): List of transformed Vector objects.
+    Plots the original points vs the transformed points.
     """
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
-    # Extract coordinates for original points
     original_x = [point.coords[0] for point in original_points]
     original_y = [point.coords[1] for point in original_points]
     original_z = [point.coords[2] for point in original_points]
 
-    # Extract coordinates for transformed points
     transformed_x = [point.coords[0] for point in transformed_points]
     transformed_y = [point.coords[1] for point in transformed_points]
     transformed_z = [point.coords[2] for point in transformed_points]
 
-    # Plot original points (in blue)
     ax.scatter(original_x, original_y, original_z, c='b', label='Original Points')
-
-    # Plot transformed points (in red)
     ax.scatter(transformed_x, transformed_y, transformed_z, c='r', label='Transformed Points')
 
-    # Label the axes
-    ax.set_xlabel('X axis')
-    ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
 
     plt.legend()
-    plt.title('Original Points vs Transformed Points')
+    plt.title('Original vs Transformed Points')
     plt.show()
+
+def plot_3d_transformed_vs_target(frame_num, transformed_vectors, target_vectors):
+    """
+    Plot the transformed source vectors and the target vectors.
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    transformed_points = np.array([vector.as_array() for vector in transformed_vectors])
+    target_points = np.array([vector.as_array() for vector in target_vectors])
+
+
+    ax.scatter(transformed_points[:, 0], transformed_points[:, 1], transformed_points[:, 2], c='r', marker='o', label='Transformed points')
+    ax.scatter(target_points[:, 0], target_points[:, 1], target_points[:, 2], c='b', marker='^', label='Target points')
+
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    plt.legend()
+    plt.title(f'3D Plot of Transformed points vs Target points (Frame {frame_num})')
+    plt.show()
+
+
+def visualize_vectors(d_vectors, a_vectors, c_vectors):
+    """
+    Visualize the vectors using matplotlib.
+    """
+    # Extract coordinates from Vector objects
+    d_coords = np.array([vec.coords for vec in d_vectors])
+    a_coords = np.array([vec.coords for vec in a_vectors])
+    c_coords = np.array([vec.coords for vec in c_vectors])
+
+    # Plot d_vectors
+    fig = plt.figure(figsize=(15, 5))
+    ax1 = fig.add_subplot(131, projection='3d')
+    ax1.scatter(d_coords[:, 0], d_coords[:, 1], d_coords[:, 2], c='r', marker='o')
+    ax1.set_title('d_i Vectors (Optical Markers on base of EM Tracker)')
+    ax1.set_xlabel('X')
+    ax1.set_ylabel('Y')
+    ax1.set_zlabel('Z')
+
+    # Plot a_vectors
+    ax2 = fig.add_subplot(132, projection='3d')
+    ax2.scatter(a_coords[:, 0], a_coords[:, 1], a_coords[:, 2], c='g', marker='^')
+    ax2.set_title('a_i Vectors (Optical Markers on Calibration Object)')
+    ax2.set_xlabel('X')
+    ax2.set_ylabel('Y')
+    ax2.set_zlabel('Z')
+
+    # Plot c_vectors
+    ax3 = fig.add_subplot(133, projection='3d')
+    ax3.scatter(c_coords[:, 0], c_coords[:, 1], c_coords[:, 2], c='b', marker='s')
+    ax3.set_title('c_i Vectors (EM Markers on Calibration Object)')
+    ax3.set_xlabel('X')
+    ax3.set_ylabel('Y')
+    ax3.set_zlabel('Z')
+
+    # Show plots
+    plt.tight_layout()
+    plt.show()
+
+def visualize_H0_vectors(H0_vectors):
+    """
+    Visualize the H0 vectors in 3D space, with each vector originating from the origin.
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+
+    origin = np.array([0, 0, 0])
+
+    for idx, vec in enumerate(H0_vectors):
+        vec_array = vec.as_array()
+        ax.plot([origin[0], vec_array[0]], [origin[1], vec_array[1]], [origin[2], vec_array[2]], color='b', alpha=0.7, label=f"Frame {idx + 1}" if idx == 0 else "")
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    plt.legend()
+    plt.show()
+
+def generate_random_points(num_points: int):
+    points = []
+    for _ in range(num_points):
+        x = random.uniform(0,200)
+        y = random.uniform(0,200)
+        z = random.uniform(0,200)
+        points.append(LA.Vector(x, y, z))
+    return points
