@@ -570,37 +570,4 @@ def visualize_vectors(d_vectors, a_vectors, c_vectors):
     ax3.set_ylabel('Y')
     ax3.set_zlabel('Z')
 
-    # Show plots
-    plt.tight_layout()
-    plt.show()
-
-
-def combine_point_cloud_frames(F_D_opt_point_cloud, F_H_opt_point_cloud):
-    """
-    Combine two point cloud frame dictionaries by multiplying their transformations in order.
-
-    Parameters:
-    F_D_opt_point_cloud (dict): Dictionary containing the first set of frames.
-    F_H_opt_point_cloud (dict): Dictionary containing the second set of frames.
-
-    Returns:
-    dict: Combined dictionary with frame numbers as keys and Frame objects as values.
-    """
-    combined_frames = {}
-
-    # Iterate over frame numbers present in both dictionaries
-    for frame_num in F_D_opt_point_cloud:
-        if frame_num in F_H_opt_point_cloud:
-            # Get the Frame objects from both dictionaries
-            frame_D = F_D_opt_point_cloud[frame_num]
-            frame_H = F_H_opt_point_cloud[frame_num]
-
-#Multiply the frames to combine transformations
-            combined_frame = frame_D @ frame_H
-
-#Store the result in the combined dictionary
-            combined_frames[frame_num] = combined_frame
-
-    return combined_frames
-
-
+    #
