@@ -286,9 +286,6 @@ def compute_local_marker_vectors(frames_data, vector_type):
     Returns:
     np.ndarray: Array of local vectors (g_j or h_j) for the first frame.
     """
-
-    if not frames_data:
-        raise ValueError("frames_data cannot be empty")
     
     vector_key = f'{vector_type}_vectors'
 

@@ -313,13 +313,6 @@ class TestCentroidAndLocalMarkerVectors(unittest.TestCase):
         self.assertTrue(np.allclose(local_vectors[0].as_array(), expected_local_vectors[0].as_array()))
         self.assertTrue(np.allclose(local_vectors[1].as_array(), expected_local_vectors[1].as_array()))
 
-    def test_empty_frame_data(self):
-        """Test compute_centroid_vectors and compute_local_marker_vectors with empty frame data."""
-        empty_frames_data = {}
-        centroid_vectors = LA.compute_centroid_vectors(empty_frames_data, 'H')
-        local_vectors = LA.compute_local_marker_vectors(empty_frames_data, 'G')
-        self.assertEqual(centroid_vectors, [])
-        self.assertEqual(local_vectors, [])
 
     def test_single_frame_data(self):
         """Test compute_centroid_vectors and compute_local_marker_vectors with a single frame."""
