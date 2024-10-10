@@ -383,6 +383,32 @@ def compute_centroid_vectors(frames_data, vector_type):
 
     return centroid_vectors
 
+def compute_local_marker_vectors(frames_data, centroid_vectors, vector_type):
+    """
+    Compute the hi vectors for each frame, where hi = Hi - H0.
+
+    Parameters:
+    frames_data (dict): Dictionary containing frame data with vectors for each frame.
+    centroid_vectors (list of Vector): List of centroid vectors for each frame.
+    vector_type (str): The type of vector to use ('H' or 'G').
+
+    Returns:
+    dict: Dictionary with keys as 'frame n' and values as a list of hi Vectors for each frame.
+    """
+    vector_key = f'{vector_type}_vectors'
+    hi_vectors = {}
+
+    for frame_num, frame_data in frames_data.items():
+        centroid_coords = centroid_vectors[frame_num - 1].coords
+        coords = [vec.coords for vec in frame_data[vector_key]]
+        hi_list = [Vector(*(coords[j] - centroid_coords)) for j in range(len(coords))]
+        hi_vectors[f'frame {frame_num}'] = hi_list
+
+    return hi_vectors
+
+
+
+
 
 def translate_points(observations, midpoint):
     """
