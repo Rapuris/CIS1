@@ -135,7 +135,7 @@ def read_empivot_file(file_path: str):
                 G_coords = list(map(float, lines[current_line].split(',')))
                 frame_points.append(LA.Vector(*G_coords))
                 current_line += 1
-            frames[frame_idx + 1] = frame_points
+            frames[frame_idx + 1] = {'G_vectors': frame_points}
 
     return frames, N_G, N_frames
 
