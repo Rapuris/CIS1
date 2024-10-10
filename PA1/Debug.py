@@ -167,9 +167,9 @@ def fit_sphere(points):
     Fits a sphere to a set of 3D points using nonlinear least squares optimization.
 
     Returns:
-    center (numpy.ndarray): The (x, y, z) coordinates of the sphere's center.
-    radius (float): The radius of the sphere.
-    residuals (float): The sum of squared residuals of the fit.
+    center (x,y,z)
+    radius r
+    residuals : The sum of squared residuals
     """
 
     points = np.asarray(points)
